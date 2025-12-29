@@ -1,30 +1,81 @@
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.parsers import MultiPartParser, FormParser
-from django.conf import settings
 import os
-from .ai.trainer import AIModelTrainer
+import json
+import logging
+from datetime import datetime
 
-class CompanyInfoUploadView(APIView):
-	permission_classes = [IsAuthenticated]
-	parser_classes = [MultiPartParser, FormParser]
+import google.generativeai as genai
+from django.conf import settings
+from rest_framework import status
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-	def post(self, request):
-		name = request.data.get('name')
-		ctype = request.data.get('type')
-		file = request.FILES.get('file')
-		if not name or not ctype:
-			return Response({'error': 'Name and type required'}, status=400)
-		file_path = None
-		upload_dir = os.path.join(settings.MEDIA_ROOT, 'company_files')
-		os.makedirs(upload_dir, exist_ok=True)
-		if file:
-			file_path = os.path.join(upload_dir, file.name)
-			with open(file_path, 'wb+') as dest:
-				for chunk in file.chunks():
-					dest.write(chunk)
-		trainer = AIModelTrainer(data_dir=upload_dir)
-		trainer.add_training_data(name, ctype, file_path)
-		return Response({'message': 'Company info uploaded and added for training.'})
+logger = logging.getLogger(__name__)
+
+class AIAnswerView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        prompt = request.data.get('prompt')
+        location = request.data.get('location', 'Nepal')
+
+        if not prompt:
+            return Response({'error': 'Prompt required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 1. API Key Setup
+        GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+        if not GEMINI_API_KEY:
+            return Response({'error': 'API key not configured.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        genai.configure(api_key=GEMINI_API_KEY)
+        full_prompt = f"Location: {location}. User Question: {prompt}"
+
+        # 2. Latest 2025 Model List
+        # Priority: 
+        # - gemini-3-flash-preview: Latest frontier performance
+        # - gemini-2.5-flash: Current stable workhorse
+        # - gemini-2.0-flash: Fallback stable
+        models_to_try = [
+            'gemini-3-flash-preview', 
+            'gemini-2.5-flash', 
+            'gemini-2.0-flash'
+        ]
+        
+        answer = "I'm sorry, the AI service is currently unavailable. Please try again later."
+        
+        for model_name in models_to_try:
+            try:
+                model = genai.GenerativeModel(model_name)
+                response = model.generate_content(full_prompt)
+                
+                if response and hasattr(response, 'text'):
+                    answer = response.text.strip()
+                    # Clean up formatting for consistent UI display
+                    answer = '\n'.join(line.strip() for line in answer.splitlines() if line.strip())
+                    break  # SUCCESS: Exit the loop
+            except Exception as e:
+                logger.warning(f"Model {model_name} failed: {str(e)}")
+                # We continue to the next model in the list
+                continue
+
+        # 3. Data Logging
+        try:
+            self.log_interaction(prompt, location, answer)
+        except Exception as log_err:
+            logger.error(f"Logging failed: {log_err}")
+
+        # IMPORTANT: This must be outside the loop to ensure a Response is always returned
+        return Response({'answer': answer}, status=status.HTTP_200_OK)
+
+    def log_interaction(self, prompt, location, answer):
+        data_dir = os.path.join(os.path.dirname(__file__), 'data')
+        os.makedirs(data_dir, exist_ok=True)
+        record = {
+            'timestamp': datetime.utcnow().isoformat(),
+            'prompt': prompt,
+            'location': location,
+            'answer': answer
+        }
+        with open(os.path.join(data_dir, 'answers.jsonl'), 'a', encoding='utf-8') as f:
+            f.write(json.dumps(record, ensure_ascii=False) + '\n')

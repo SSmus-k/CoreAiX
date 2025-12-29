@@ -1,38 +1,53 @@
 "use client";
 
+
 import { useState } from 'react';
 import SolutionResult from '@/components/solutions/SolutionResult';
 
-const mockResult = {
-  summary: 'Expand retail business and hire 5 employees',
-  laws: [
-    { title: 'Company Registration Act', desc: 'All companies must register with OCR.' },
-    { title: 'Labor Act', desc: 'Hiring more than 5 employees requires labor office notification.' },
-  ],
-  statements: [
-    'Section 12: Registration required for expansion.',
-    'Section 34: Labor office must be notified for new hires.'
-  ],
-  steps: [
-    'Register business expansion with OCR',
-    'Notify labor office',
-    'Update tax registration',
-  ],
+type SolutionResultType = {
+  summary: string;
+  laws: { title: string; desc: string }[];
+  statements: string[];
+  steps: string[];
 };
 
 export default function SolutionsPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<typeof mockResult | null>(null);
+  const [result, setResult] = useState<SolutionResultType | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setResult(null);
-    setTimeout(() => {
-      setResult(mockResult);
+    setError(null);
+    try {
+      // Always use absolute backend URL for fetch
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, '') || "http://localhost:8000";
+      const apiUrl = `${backendUrl}/api/v1/core/ai/answer/`;
+      console.log('Fetching AI answer from:', apiUrl);
+      const res = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: input, location: "Nepal" })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Unknown error");
+      // Expecting backend to return { answer: string }
+      // For demo, parse answer as summary, laws, statements, steps (if possible)
+      // Here, just show answer as summary, rest empty
+      setResult({
+        summary: data.answer,
+        laws: [],
+        statements: [],
+        steps: [],
+      });
+    } catch (err: any) {
+      setError(err.message || "Failed to get answer");
+    } finally {
       setLoading(false);
-    }, 1200);
+    }
   }
 
   return (
@@ -54,6 +69,9 @@ export default function SolutionsPage() {
           {loading ? 'Analyzing...' : 'Analyze'}
         </button>
       </form>
+      {error && (
+        <div className="bg-red-900/80 text-red-200 rounded-xl p-4 mb-4">{error}</div>
+      )}
       {result && (
         <SolutionResult
           summary={result.summary}

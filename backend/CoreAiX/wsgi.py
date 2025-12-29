@@ -7,7 +7,10 @@ For more information on this file, see
 https://docs.djangoproject.com/en/6.0/howto/deployment/wsgi/
 """
 
+
 import os
+import dotenv
+dotenv.load_dotenv()
 
 from django.core.wsgi import get_wsgi_application
 
