@@ -1,23 +1,54 @@
-🚧 Project Status: Under Construction™
+---
 
-Current State: “It runs on my machine.”
+## 🚧 Project Status: **Under Construction™**
 
-This project is allegedly in active development. Expect breaking changes, abandoned ideas, spontaneous refactors, and APIs that may change purely out of spite.
+> ⚠️ **Current State:** *“It runs on my machine.”*
 
-The AI is currently held together by dreams, hope, and the fragile belief that things will somehow work out. No tests, no guarantees, only vibes. If it produces correct output, please do not ask why — we will not survive that investigation.
+---
+
+### ❗ Warning
+
+This project is **allegedly** in active development.  
+Expect:
+
+- 💥 Breaking changes  
+- 🧩 Abandoned ideas  
+- 🔄 Spontaneous refactors  
+- 🔥 APIs that may change purely out of spite  
+
+---
+
+### 🤖 AI Reliability Disclaimer
+
+The AI is currently held together by **dreams, hope, and the fragile belief that things will somehow work out**.
+
+- ❌ No tests  
+- ❌ No guarantees  
+
+If it produces correct output, **do not ask why** —  
+we will not survive that investigation.
+
+---
+
+### 🧠 Development Status
 
 Development is temporarily paused because the maintainer is:
 
-mentally drained
+- 🧠 Mentally drained  
+- 😴 Physically exhausted  
+- 👻 Spiritually unavailable  
 
-physically exhausted
+Work will resume once my brain finishes its **cooldown cycle** and stops throwing internal exceptions.
 
-spiritually unavailable
+---
 
-Work will resume once my brain finishes its cooldown cycle and stops throwing internal exceptions.
+### ☠️ Final Notice
 
-Clone at your own risk.
-Issues welcome. Expectations not.
+> **Clone at your own risk.**  
+> Issues welcome.  
+> Expectations not.
+
+---
 
 
 # RegulAI – Regulation-to-Action Engine 🇳🇵
