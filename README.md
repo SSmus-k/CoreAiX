@@ -1,13 +1,28 @@
+🚧 Project Status: Under Construction™
+
+Current State: “It runs on my machine.”
+
+This project is allegedly in active development. Expect breaking changes, abandoned ideas, spontaneous refactors, and APIs that may change purely out of spite.
+
+The AI is currently held together by dreams, hope, and the fragile belief that things will somehow work out. No tests, no guarantees, only vibes. If it produces correct output, please do not ask why — we will not survive that investigation.
+
+Development is temporarily paused because the maintainer is:
+
+mentally drained
+
+physically exhausted
+
+spiritually unavailable
+
+Work will resume once my brain finishes its cooldown cycle and stops throwing internal exceptions.
+
+Clone at your own risk.
+Issues welcome. Expectations not.
+
+
 # RegulAI – Regulation-to-Action Engine 🇳🇵
 
 RegulAI is an AI-powered compliance platform designed to help Small and Medium Enterprises (SMEs) in Nepal navigate complex legal, tax, and regulatory requirements by converting laws into clear, actionable steps.
-
----
-
-## 🚧 Project Status
-
-**Status:** Under Construction  
-This project is currently in active development. Features, architecture, and APIs are subject to change.
 
 ---
 
