@@ -25,88 +25,39 @@ SMEs in Nepal face:
 RegulAI simplifies compliance using AI:
 
 **Input**
-- Business type  
-- Intended business action (e.g., registration, expansion, hiring, tax filing)
 
-**Output**
-- Step-by-step compliance checklist  
-- Required approvals & documents  
-- Deadlines & regulatory references  
-- Optional downloadable PDF for record-keeping  
+# RegulAI – Regulation-to-Action Engine
 
----
+AI-powered compliance platform for SMEs in Nepal. Converts complex legal and tax regulations into clear, actionable steps.
 
-## 🤖 AI Integration (Planned)
-
-- **NLP Engine:** Parses legal documents, notices, and policies  
-- **Decision Engine:** Maps business actions to applicable regulations  
-- **Continuous Learning:** Updates logic as laws and rules change  
-
----
-
-## 🧱 Tech Stack (Current / Planned)
-
-### Backend
-- Django
-- Django REST Framework
-- Python
-- PostgreSQL (planned)
-
-### Frontend
-- Next.js **or** Vue 3 (Vite)
-- REST API–based integration
-
-### AI / Data
-- NLP pipelines (PDFs, legal text)
-- Rule-based + ML decision logic (iterative)
-
----
-
-## 📁 Project Structure
-
+## Monorepo Structure
+```
 regulai/
-├── backend/ # Django backend
-├── frontend/ # Next.js or Vue frontend
-├── docs/ # Architecture & API documentation
-├── scripts/ # Utility and automation scripts
-├── docker/ # Container configs (planned)
+├── backend/      # Django backend
+├── frontend/     # Next.js frontend
+├── scripts/      # System explanations
+├── docs/         # Architecture & API docs
+├── docker/       # Deployment
 └── README.md
+```
 
+## Features
+- Django REST API (JWT, PostgreSQL, modular apps)
+- Next.js dashboard (TypeScript, Tailwind CSS)
+- AI/NLP logic layer
+- Admin for regulations, rules, compliance
+- PDF checklist download
+- Environment-based settings
 
+## Setup
+See [docs/setup.md](docs/setup.md) for full instructions.
 
+## Documentation
+- [docs/architecture.md](docs/architecture.md)
+- [docs/api.md](docs/api.md)
+- [docs/env.md](docs/env.md)
+- [scripts/](scripts/) for system flows
+
+## Timestamp
+2025-12-29 (UTC)
 ---
-
-## 💰 Monetization Strategy (Planned)
-
-- **B2B Subscriptions:** Monthly / annual SME access  
-- **Pay-per-Report:** One-off detailed compliance checklists  
-- **Consulting Tie-ins:** Expert legal or tax guidance for complex cases  
-
----
-
-## 🌍 Impact Vision
-
-- Reduce compliance errors and penalties  
-- Save time for SME owners and operators  
-- Improve regulatory transparency and accessibility  
-- Build a scalable compliance engine adaptable across industries  
-
----
-
-## 🛠 Development Notes
-
-- API-first architecture
-- Frontend and backend are decoupled
-- Designed for incremental feature rollout (MVP → Scale)
-
----
-
-## 📅 Last Updated
-
-**Timestamp:** 2025-12-29 (UTC)
-
----
-
-## 📌 Disclaimer
-
-RegulAI is an assistive compliance tool and does not replace certified legal or tax professionals.
