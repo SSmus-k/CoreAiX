@@ -2,7 +2,7 @@
 
 ## 🚧 Project Status: **Under Construction™**
 
-> ⚠️ **Current State:** *“It runs on my machine.”*
+⚠️ **Current State:** *“It runs on my machine.”*
 
 ---
 
