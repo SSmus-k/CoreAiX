@@ -28,12 +28,12 @@ export default function DashboardPage() {
         {summaryCards.map((card) => (
           <div
             key={card.label}
-            className={`bg-gradient-to-br ${card.accent} rounded-2xl p-6 shadow-xl flex flex-col items-start justify-between min-h-[120px]`}
+            className={`bg-linear-to-br ${card.accent} rounded-2xl p-6 shadow-xl flex flex-col items-start justify-between min-h-30`}
             style={{ backdropFilter: "blur(12px)", background: "rgba(30,41,59,0.7)" }}
           >
             <div className="text-3xl mb-2">{card.icon}</div>
-            <div className="text-lg font-semibold text-white mb-1">{card.label}</div>
-            <div className="text-3xl font-bold text-cyan-100">{card.value}</div>
+            <div className="text-md font-semibold text-white mb-1">{card.label}</div>
+            <div className="text-xl font-bold text-cyan-100">{card.value}</div>
           </div>
         ))}
       </div>

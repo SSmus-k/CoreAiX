@@ -1,4 +1,5 @@
-import React from 'react';
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm';
 
 interface Law {
   title: string;
@@ -26,7 +27,11 @@ export default function SolutionResult({
     <div className="grid gap-6">
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 shadow-lg">
         <h3 className="text-xl font-bold text-cyan-200 mb-2">Problem Summary</h3>
-        <div className="text-cyan-100 mb-2">{summary}</div>
+        <div className="prose prose-invert prose-headings:text-xl prose-h3:text-lg prose-p:text-base mb-2">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          {summary}
+          </ReactMarkdown>
+          </div>
       </div>
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 shadow-lg">
         <h3 className="text-xl font-bold text-cyan-200 mb-2">Applicable Laws</h3>
