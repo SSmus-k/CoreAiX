@@ -15,7 +15,7 @@ export default function UserPanel() {
   const router = useRouter()
 useEffect(() => {
   const token = localStorage.getItem("jwt")
-  if(!token) router.replace('/login')
+  if(!token) router.replace('/auth/login')
 
     async function getUser(){
       const res = await fetch("http://localhost:8000/api/v1/users/me",

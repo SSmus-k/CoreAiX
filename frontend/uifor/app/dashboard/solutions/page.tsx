@@ -6,9 +6,6 @@ import SolutionResult from '@/components/solutions/SolutionResult';
 
 type SolutionResultType = {
   summary: string;
-  laws: { title: string; desc: string }[];
-  statements: string[];
-  steps: string[];
 };
 
 export default function SolutionsPage() {
@@ -39,9 +36,6 @@ export default function SolutionsPage() {
       // Here, just show answer as summary, rest empty
       setResult({
         summary: data.answer,
-        laws: [],
-        statements: [],
-        steps: [],
       });
     } catch (err: any) {
       setError(err.message || "Failed to get answer");
@@ -75,9 +69,6 @@ export default function SolutionsPage() {
       {result && (
         <SolutionResult
           summary={result.summary}
-          laws={result.laws}
-          statements={result.statements}
-          steps={result.steps}
           onDownload={() => alert('Download as PDF (to be implemented)')}
           onSave={() => alert('Save Solution (to be implemented)')}
         />
