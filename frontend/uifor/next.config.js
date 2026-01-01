@@ -1,16 +1,11 @@
-/****
- * next.config.js
- * Proxy API requests to Django backend in development
- ****/
-
+/** @type {import('next').NextConfig} */
 const nextConfig = {
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'http://localhost:8000/api/:path*',
+  experimental: {
+    turbo: {
+      resolveAlias: {
+        tailwindcss: require.resolve("tailwindcss"),
       },
-    ];
+    },
   },
 };
 

@@ -1,81 +1,213 @@
 import os
 import json
+import time
+import sqlite3
 import logging
-from datetime import datetime
+import requests
+from typing import Optional
 
-import google.generativeai as genai
 from django.conf import settings
-from rest_framework import status
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework import status
 
 logger = logging.getLogger(__name__)
+
+# ===============================
+# Simple Local Training Database
+# ===============================
+
+DB_PATH = os.path.join(os.path.dirname(__file__), "training_data.db")
+
+
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute(
+        """
+        CREATE TABLE IF NOT EXISTS training_data (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            question TEXT UNIQUE,
+            answer_json TEXT
+        )
+        """
+    )
+    conn.commit()
+    return conn
+
+
+def save_training_example(question: str, answer: dict):
+    conn = init_db()
+    c = conn.cursor()
+    c.execute(
+        "INSERT OR REPLACE INTO training_data (question, answer_json) VALUES (?, ?)",
+        (question.lower().strip(), json.dumps(answer, ensure_ascii=False)),
+    )
+    conn.commit()
+    conn.close()
+
+
+def custom_ai_answer(question: str) -> Optional[dict]:
+    conn = init_db()
+    c = conn.cursor()
+    c.execute("SELECT answer_json FROM training_data WHERE question = ?", (question.lower().strip(),))
+    row = c.fetchone()
+    conn.close()
+    if row:
+        return json.loads(row[0])
+    return None
+
+
+# ===============================
+# Gemini Prompt + API
+# ===============================
+
+RESPONSE_SCHEMA_KEYS = [
+    "summary",
+    "key_points",
+    "step_by_step",
+    "legal_reference",
+    "action_items",
+    "confidence_score",
+]
+
+
+def generate_prompt(question: str, location: str = "Nepal") -> str:
+    return f"""
+You are an expert legal and business advisor for Nepalese SMEs.
+
+STRICT RULES:
+- Output ONLY valid JSON
+- NO markdown
+- NO explanations
+- NO extra text
+
+JSON SCHEMA (must match exactly):
+{{
+  "summary": "short explanation",
+  "key_points": ["point 1", "point 2"],
+  "step_by_step": ["step 1", "step 2"],
+  "legal_reference": ["law reference"],
+  "action_items": ["action 1"],
+  "confidence_score": 0.0
+}}
+
+Guidelines:
+- Simple language
+- Bullet points preferred
+- Empty lists allowed
+- Confidence score between 0 and 1
+
+Location: {location}
+Question: {question}
+""".strip()
+
+
+def call_gemini(prompt: str, model: str, api_key: str) -> Optional[str]:
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+    headers = {"Content-Type": "application/json"}
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}]
+    }
+
+    try:
+        resp = requests.post(url, headers=headers, json=payload, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
+        return data["candidates"][0]["content"]["parts"][0]["text"]
+    except Exception as e:
+        logger.warning(f"Gemini call failed for {model}: {e}")
+        return None
+
+
+def normalize_response(parsed: dict) -> dict:
+    normalized = {}
+    for key in RESPONSE_SCHEMA_KEYS:
+        value = parsed.get(key)
+
+        if key == "confidence_score":
+            try:
+                value = float(value)
+                value = max(0.0, min(1.0, value))
+            except Exception:
+                value = 0.0
+
+        elif key == "summary":
+            value = str(value) if value else ""
+
+        else:
+            if not isinstance(value, list):
+                value = []
+            value = [str(v) for v in value]
+
+        normalized[key] = value
+
+    return normalized
+
+
+# ===============================
+# API View
+# ===============================
 
 class AIAnswerView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        prompt = request.data.get('prompt')
-        location = request.data.get('location', 'Nepal')
+        question = request.data.get("prompt")
+        location = request.data.get("location", "Nepal")
 
-        if not prompt:
-            return Response({'error': 'Prompt required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not question:
+            return Response({"error": "Prompt is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 1. API Key Setup
-        GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
-        if not GEMINI_API_KEY:
-            return Response({'error': 'API key not configured.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # 1️⃣ Check local trained answers
+        cached = custom_ai_answer(question)
+        if cached:
+            return Response(
+                {"answer": cached, "source": "custom_ai"},
+                status=status.HTTP_200_OK,
+            )
 
-        genai.configure(api_key=GEMINI_API_KEY)
-        full_prompt = f"Location: {location}. User Question: {prompt}"
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            return Response(
+                {"error": "GEMINI_API_KEY not configured"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
-        # 2. Latest 2025 Model List
-        # Priority: 
-        # - gemini-3-flash-preview: Latest frontier performance
-        # - gemini-2.5-flash: Current stable workhorse
-        # - gemini-2.0-flash: Fallback stable
-        models_to_try = [
-            'gemini-3-flash-preview', 
-            'gemini-2.5-flash', 
-            'gemini-2.0-flash'
+        prompt = generate_prompt(question, location)
+        models = [
+            "gemini-2.5-flash",
+            "gemini-2.0-flash",
         ]
-        
-        answer = "I'm sorry, the AI service is currently unavailable. Please try again later."
-        
-        for model_name in models_to_try:
-            try:
-                model = genai.GenerativeModel(model_name)
-                response = model.generate_content(full_prompt)
-                
-                if response and hasattr(response, 'text'):
-                    answer = response.text.strip()
-                    # Clean up formatting for consistent UI display
-                    answer = '\n'.join(line.strip() for line in answer.splitlines() if line.strip())
-                    break  # SUCCESS: Exit the loop
-            except Exception as e:
-                logger.warning(f"Model {model_name} failed: {str(e)}")
-                # We continue to the next model in the list
+
+        for model in models:
+            raw = call_gemini(prompt, model, api_key)
+            if not raw:
                 continue
 
-        # 3. Data Logging
-        try:
-            self.log_interaction(prompt, location, answer)
-        except Exception as log_err:
-            logger.error(f"Logging failed: {log_err}")
+            try:
+                parsed = json.loads(raw)
+                normalized = normalize_response(parsed)
 
-        # IMPORTANT: This must be outside the loop to ensure a Response is always returned
-        return Response({'answer': answer}, status=status.HTTP_200_OK)
+                # Save for future training
+                save_training_example(question, normalized)
 
-    def log_interaction(self, prompt, location, answer):
-        data_dir = os.path.join(os.path.dirname(__file__), 'data')
-        os.makedirs(data_dir, exist_ok=True)
-        record = {
-            'timestamp': datetime.utcnow().isoformat(),
-            'prompt': prompt,
-            'location': location,
-            'answer': answer
-        }
-        with open(os.path.join(data_dir, 'answers.jsonl'), 'a', encoding='utf-8') as f:
-            f.write(json.dumps(record, ensure_ascii=False) + '\n')
+                return Response(
+                    {
+                        "answer": normalized,
+                        "source": "gemini",
+                        "model": model,
+                    },
+                    status=status.HTTP_200_OK,
+                )
+
+            except Exception as e:
+                logger.warning(f"Invalid JSON from Gemini: {e}")
+
+            time.sleep(1)
+
+        return Response(
+            {"error": "AI service unavailable"},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
