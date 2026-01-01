@@ -9,9 +9,30 @@ export default function Home() {
   const router = useRouter();
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('jwt') : null;
-    if (token) {
-      router.replace('/dashboard');
+    if(!token) return
+    async function checkUser(){
+     try {
+       const res = await fetch("http://localhost:8000/api/v1/users/me",
+         {
+           method: "GET",
+           headers: {
+             Authorization: `Bearer ${token}`
+           }
+         }
+       )
+       if(res.ok){
+         router.replace('/dashboard')
+       }else{
+        localStorage.removeItem("jwt")
+        router.replace("/auth/login")
+       }
+     } catch (error) {
+      console.error("Auth check fail.", error)
+     }
     }
+
+    checkUser()
+
   }, [router]);
 
   return (
