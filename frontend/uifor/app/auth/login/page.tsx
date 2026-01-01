@@ -13,7 +13,6 @@ export default function LoginPage() {
 
   if (token) {
     router.replace('/dashboard');
-    return null;
   }
 
   async function handleLogin({ username, password }: { username: string; password: string }) {

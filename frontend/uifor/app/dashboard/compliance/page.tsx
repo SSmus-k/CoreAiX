@@ -38,17 +38,17 @@ export default function ComplianceForm() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center py-10 px-4 bg-gray-50">
-      <form className="max-w-md w-full bg-white p-6 rounded shadow" onSubmit={handleSubmit} aria-label="Compliance Form">
-        <h2 className="text-xl font-bold mb-4 text-blue-900">Compliance Check</h2>
+    <main className="min-h-screen flex flex-col items-center py-10 px-4">
+      <form className="max-w-md w-full bg-white/10 p-6 rounded shadow" onSubmit={handleSubmit} aria-label="Compliance Form">
+        <h2 className="text-xl font-bold mb-4 text-white">Compliance Check</h2>
         <label className="block mb-2 font-medium">Business Type</label>
         <select
-          className="w-full mb-4 p-2 border rounded"
+          className="w-full mb-4 bg-white/10 p-2 border rounded"
           value={businessType}
           onChange={e => setBusinessType(e.target.value)}
           required
         >
-          <option value="">Select type</option>
+          <option className='bg-white/10' value="">Select type</option>
           {businessTypes.map(type => (
             <option key={type} value={type}>{type}</option>
           ))}

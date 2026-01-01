@@ -6,9 +6,6 @@ import SolutionResult from '@/components/solutions/SolutionResult';
 
 type SolutionResultType = {
   summary: string;
-  laws: { title: string; desc: string }[];
-  statements: string[];
-  steps: string[];
 };
 
 export default function SolutionsPage() {
@@ -39,9 +36,6 @@ export default function SolutionsPage() {
       // Here, just show answer as summary, rest empty
       setResult({
         summary: data.answer,
-        laws: [],
-        statements: [],
-        steps: [],
       });
     } catch (err: any) {
       setError(err.message || "Failed to get answer");
@@ -51,11 +45,11 @@ export default function SolutionsPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-10">
-      <form onSubmit={handleSubmit} className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 shadow-xl mb-8">
+    <div className="max-w-3xl mx-auto py-10 w-full">
+      <form onSubmit={handleSubmit} className="bg-white/10 backdrop-blur-xl rounded-md p-8 shadow-xl mb-8">
         <h2 className="text-2xl font-bold text-cyan-200 mb-4">Describe Your Problem</h2>
         <textarea
-          className="w-full h-32 p-4 rounded-xl bg-white/10 text-cyan-100 border border-cyan-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 mb-4"
+          className="w-full h-32 resize-none p-4 rounded-md bg-white/10 text-cyan-100 border border-cyan-600 focus:outline-none focus:ring focus:ring-cyan-500 mb-4"
           placeholder="E.g. I want to expand my retail business and hire 5 employees"
           value={input}
           onChange={e => setInput(e.target.value)}
@@ -63,21 +57,18 @@ export default function SolutionsPage() {
         />
         <button
           type="submit"
-          className="px-8 py-3 bg-cyan-700 text-white rounded-xl font-semibold shadow hover:bg-cyan-800 transition"
+          className="px-6 py-2 bg-cyan-700 text-sm text-white rounded-sm shadow hover:bg-cyan-800 transition"
           disabled={loading}
         >
           {loading ? 'Analyzing...' : 'Analyze'}
         </button>
       </form>
       {error && (
-        <div className="bg-red-900/80 text-red-200 rounded-xl p-4 mb-4">{error}</div>
+        <div className="bg-red-900/80 text-red-200 rounded-md p-4 mb-4">{error}</div>
       )}
       {result && (
         <SolutionResult
           summary={result.summary}
-          laws={result.laws}
-          statements={result.statements}
-          steps={result.steps}
           onDownload={() => alert('Download as PDF (to be implemented)')}
           onSave={() => alert('Save Solution (to be implemented)')}
         />

@@ -15,7 +15,7 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   return (
-    <aside className="fixed left-0 top-0 h-full w-64 bg-white/10 backdrop-blur-xl border-r border-white/10 flex flex-col z-30">
+    <aside className="fixed left-0 top-0 h-full w-58 bg-white/10 backdrop-blur-xl border-r border-white/10 flex flex-col z-30">
       <div className="h-20 flex items-center justify-center border-b border-white/10">
         <span className="text-2xl font-bold text-cyan-300 tracking-wide">RegulAI</span>
       </div>
@@ -23,7 +23,7 @@ export default function Sidebar() {
         <ul className="space-y-2">
           {navItems.map(({ label, href, icon: Icon }) => (
             <li key={href}>
-              <Link href={href} className={`flex items-center gap-3 px-6 py-3 rounded-xl transition font-medium text-base ${pathname === href ? 'bg-cyan-700/80 text-white shadow-lg' : 'text-cyan-100 hover:bg-cyan-900/40 hover:text-white'}`}>
+              <Link href={href} className={`flex items-center gap-3 px-6 py-3 transition font-medium text-sm ${pathname === href ? 'bg-cyan-700/80 text-white shadow-lg' : 'text-cyan-100 hover:bg-cyan-900/40 hover:text-white'}`}>
                 <Icon className="w-5 h-5" />
                 {label}
               </Link>
