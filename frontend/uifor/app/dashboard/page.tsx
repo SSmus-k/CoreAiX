@@ -32,8 +32,8 @@ export default function DashboardPage() {
             style={{ backdropFilter: "blur(12px)", background: "rgba(30,41,59,0.7)" }}
           >
             <div className="text-3xl mb-2">{card.icon}</div>
-            <div className="text-md font-semibold text-white mb-1">{card.label}</div>
-            <div className="text-xl font-bold text-cyan-100">{card.value}</div>
+            <div className="text-sm font-medium text-gray-300">{card.label}</div>
+            <div className="text-2xl font-bold text-white mt-1">{card.value}</div>
           </div>
         ))}
       </div>
