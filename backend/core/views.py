@@ -1,3 +1,4 @@
+
 import os
 import json
 import time
@@ -11,6 +12,9 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
+
+# Import strict AI response schema
+from .ai_response_schema import AIResponseSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -48,15 +52,34 @@ def save_training_example(question: str, answer: dict):
     conn.close()
 
 
-def custom_ai_answer(question: str) -> Optional[dict]:
+
+# Fuzzy DB lookup for similar questions
+def custom_ai_answer(question: str, threshold: float = 0.7) -> Optional[dict]:
+    import difflib
     conn = init_db()
     c = conn.cursor()
-    c.execute("SELECT answer_json FROM training_data WHERE question = ?", (question.lower().strip(),))
-    row = c.fetchone()
+    c.execute("SELECT question, answer_json FROM training_data")
+    rows = c.fetchall()
     conn.close()
-    if row:
-        return json.loads(row[0])
+    question_norm = question.lower().strip()
+    best_score = 0.0
+    best_answer = None
+    for q, answer_json in rows:
+        score = difflib.SequenceMatcher(None, question_norm, q).ratio()
+        if score > best_score and score >= threshold:
+            best_score = score
+            best_answer = answer_json
+    if best_answer:
+        return json.loads(best_answer)
     return None
+
+# Utility to check answer source
+def get_answer_source(response_data: dict) -> str:
+    """
+    Returns 'gemini' if answer is from Gemini, 'custom_ai' if from DB, or 'unknown'.
+    Expects the API response dict.
+    """
+    return response_data.get('source', 'unknown')
 
 
 # ===============================
@@ -121,34 +144,45 @@ def call_gemini(prompt: str, model: str, api_key: str) -> Optional[str]:
         return None
 
 
-def normalize_response(parsed: dict) -> dict:
-    normalized = {}
-    for key in RESPONSE_SCHEMA_KEYS:
-        value = parsed.get(key)
 
-        if key == "confidence_score":
-            try:
-                value = float(value)
-                value = max(0.0, min(1.0, value))
-            except Exception:
-                value = 0.0
+# Strict normalization and schema enforcement
 
-        elif key == "summary":
-            value = str(value) if value else ""
+def normalize_and_validate_response(parsed: dict) -> dict | None:
+    parsed = dict(parsed)  # shallow copy
 
-        else:
-            if not isinstance(value, list):
-                value = []
-            value = [str(v) for v in value]
+    DEFAULTS = {
+        "schema_version": "1.0",
+        "risk_level": "",
+        "summary": "",
+        "key_points": [],
+        "step_by_step": [],
+        "legal_reference": "",
+        "action_items": [],
+        "confidence_score": 0.0,
+    }
 
-        normalized[key] = value
+    for key, default in DEFAULTS.items():
+        parsed.setdefault(key, default)
 
-    return normalized
+    serializer = AIResponseSerializer(data=parsed)
+    if not serializer.is_valid():
+        return None
+
+    data = serializer.validated_data
+
+    # HARD safety clamp
+    score = data.get("confidence_score", 0.0)
+    if not isinstance(score, (int, float)) or not (0.0 <= score <= 1.0):
+        return None
+
+    return data
+
 
 
 # ===============================
 # API View
 # ===============================
+
 
 class AIAnswerView(APIView):
     permission_classes = [AllowAny]
@@ -160,7 +194,7 @@ class AIAnswerView(APIView):
         if not question:
             return Response({"error": "Prompt is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 1️⃣ Check local trained answers
+        # 1️⃣ Check local trained answers (assumed already validated)
         cached = custom_ai_answer(question)
         if cached:
             return Response(
@@ -188,26 +222,28 @@ class AIAnswerView(APIView):
 
             try:
                 parsed = json.loads(raw)
-                normalized = normalize_response(parsed)
+            except Exception as e:
+                logger.warning(f"Invalid JSON from Gemini: {e}")
+                time.sleep(1)
+                continue
 
-                # Save for future training
-                save_training_example(question, normalized)
-
+            validated = normalize_and_validate_response(parsed)
+            if validated is not None:
+                # Save only validated output
+                save_training_example(question, validated)
                 return Response(
                     {
-                        "answer": normalized,
+                        "answer": validated,
                         "source": "gemini",
                         "model": model,
                     },
                     status=status.HTTP_200_OK,
                 )
-
-            except Exception as e:
-                logger.warning(f"Invalid JSON from Gemini: {e}")
-
-            time.sleep(1)
+            else:
+                logger.warning(f"AI output failed schema validation for model {model}")
+                time.sleep(1)
 
         return Response(
-            {"error": "AI service unavailable"},
+            {"error": "AI service unavailable or output invalid"},
             status=status.HTTP_503_SERVICE_UNAVAILABLE,
         )
